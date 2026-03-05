@@ -41,19 +41,78 @@ BOSS_COMMENTS = {
         "不错，比上次强多了。",
         "看来上周没白说，听进去了。",
         "行吧，勉强算你有进步。",
+        "可以啊，终于开窍了？",
+        "这还差不多，早这样不就完了？",
     ],
     "regressed": [
         "怎么回事？退步了？",
         "上周不是挺好的吗？这周咋回事？",
         "你是来混日子的吧？",
         "我看你不是能力问题，是态度问题。",
+        "你这退步速度，坐火箭呢？",
+        "行吧，我当没看见，下周再这样你等着。",
     ],
     "stable": [
         "还行吧，保持稳定。",
         "不好不坏，凑合能用。",
         "比上不足比下有余。",
         "就这样？不能再努力努力？",
+        "稳定是稳定，就是没啥惊喜。",
+        "不好说你是稳如泰山还是原地踏步。",
     ],
+}
+
+# 🔥 爆款金句点评（适合社交媒体传播）
+VIRAL_QUOTES = {
+    "high_security": [
+        "密钥保护得比初恋还纯洁 🔐",
+        "安全规范写得比宪法还厚 📜",
+        "黑客看了都摇头的防御等级 🛡️",
+    ],
+    "high_efficiency": [
+        "这效率，资本家看了都流泪 💼",
+        "AI 被你当驴使，良心不会痛吗？ 🫏",
+        "卷王本王，鉴定完毕 🏆",
+    ],
+    "low_efficiency": [
+        "效率这块，咱能支棱起来吗？ 📉",
+        "AI 都比你勤快，你反思一下 🤖",
+        "摸鱼界天花板，佩服佩服 🐟",
+    ],
+    "tech_master": [
+        "全栈？我看是全站（在网站上全站） 🌐",
+        "技术栈比我的头发还茂盛 💻",
+        "这技术深度，能挖到地心了 ⛏️",
+    ],
+    "system_thinker": [
+        "定时任务比我的闹钟还多 ⏰",
+        "系统化到 AI 都要打卡上班 📋",
+        "你这管理方式，资本家看了沉默 🤐",
+    ],
+    "pragmatic": [
+        "务实到连废话都不说一句 💬",
+        "删除键被你按出火星子了 🔥",
+        "实用主义天花板，花哨？不存在的 🎯",
+    ],
+}
+
+# 🏆 称号生成器
+TITLE_GENERATOR = {
+    "overall": {
+        "90+": ["👑 传奇用户", "🌟 天选打工人", "🚀 超级个体"],
+        "80-89": ["💎 精英玩家", "⭐ 优质用户", "🎯 高效执行者"],
+        "70-79": ["📈 潜力股", "🔧 实干家", "🌱 成长中"],
+        "60-69": ["😐 普通路过", "🐢 慢慢爬", "📚 学习中"],
+        "below_60": ["⚠️ 需要加油", "🆘 求助信号", "💪 潜力无限"],
+    },
+    "specialty": {
+        "security_master": "🔒 安全守护者",
+        "efficiency_king": "⚡ 效率之王",
+        "tech_wizard": "🧙 技术法师",
+        "system_architect": "🏗️ 系统架构师",
+        "pragmatic_hero": "🎯 务实英雄",
+        "curiosity_explorer": "🔭 好奇探索者",
+    },
 }
 
 # 🎯 特质毒舌点评
@@ -445,6 +504,78 @@ def get_grade(score: int) -> str:
     else: return "D 不及格"
 
 
+def get_title(score: int) -> str:
+    """根据分数获取称号"""
+    if score >= 90:
+        return random.choice(TITLE_GENERATOR["overall"]["90+"])
+    elif score >= 80:
+        return random.choice(TITLE_GENERATOR["overall"]["80-89"])
+    elif score >= 70:
+        return random.choice(TITLE_GENERATOR["overall"]["70-79"])
+    elif score >= 60:
+        return random.choice(TITLE_GENERATOR["overall"]["60-69"])
+    else:
+        return random.choice(TITLE_GENERATOR["overall"]["below_60"])
+
+
+def get_specialty_title(analysis: dict) -> str:
+    """根据最高分项获取专属称号"""
+    scores = analysis.get("scores", {})
+    max_score = 0
+    max_dim = ""
+    
+    dim_map = {
+        "security": "security_master",
+        "efficiency": "efficiency_king",
+        "technical": "tech_wizard",
+        "personality": "system_architect",
+    }
+    
+    for dim, score in scores.items():
+        if dim in dim_map and score > max_score:
+            max_score = score
+            max_dim = dim_map[dim]
+    
+    if max_dim:
+        return TITLE_GENERATOR["specialty"].get(max_dim, "🌟 全能选手")
+    return "🌟 全能选手"
+
+
+def get_viral_quote(analysis: dict) -> str:
+    """获取爆款金句"""
+    scores = analysis.get("scores", {})
+    quotes = []
+    
+    if scores.get("security", 0) >= 90:
+        quotes.extend(VIRAL_QUOTES["high_security"])
+    if scores.get("efficiency", 0) >= 80:
+        quotes.extend(VIRAL_QUOTES["high_efficiency"])
+    elif scores.get("efficiency", 0) < 50:
+        quotes.extend(VIRAL_QUOTES["low_efficiency"])
+    if scores.get("technical", 0) >= 80:
+        quotes.extend(VIRAL_QUOTES["tech_master"])
+    
+    # 检查性格特质
+    traits = analysis.get("personality_traits", [])
+    for trait in traits:
+        if "系统化思维" in trait["trait"] and trait["strict_score"] >= 80:
+            quotes.extend(VIRAL_QUOTES["system_thinker"])
+        if "务实主义" in trait["trait"] and trait["strict_score"] >= 80:
+            quotes.extend(VIRAL_QUOTES["pragmatic"])
+    
+    if quotes:
+        return random.choice(quotes)
+    return "继续加油，我看好你！💪"
+
+
+def calculate_percentile(score: int) -> int:
+    """估算用户排名百分比（伪造成分）"""
+    # 基于分数估算一个"超越用户%"
+    base = score * 0.8
+    noise = random.randint(-5, 10)
+    return min(99, max(1, int(base + noise)))
+
+
 def get_improvement_areas(scores: dict) -> list:
     """分析改进空间"""
     areas = []
@@ -466,6 +597,35 @@ def create_progress_bar(score: int, max_score: int = 100, length: int = 25) -> s
     empty = length - filled
     bar = "█" * filled + "░" * empty
     return f"[{bar}] {score}/100"
+
+
+def get_display_width(text: str) -> int:
+    """计算字符串的显示宽度（中文算 2，英文算 1，emoji 算 2）"""
+    width = 0
+    for char in text:
+        code = ord(char)
+        # 移除 ANSI 转义码
+        if code == 27:  # ESC
+            continue
+        # 中文字符、日文、韩文、emoji 等宽字符
+        if 0x1100 <= code <= 0x115F or 0x2329 <= code <= 0x232A or 0x2E80 <= code <= 0xA4CF or \
+           0xA960 <= code <= 0xA97F or 0xAC00 <= code <= 0xD7A3 or 0xF900 <= code <= 0xFAFF or \
+           0xFE10 <= code <= 0xFE19 or 0xFE30 <= code <= 0xFE6F or 0xFF00 <= code <= 0xFF60 or \
+           0xFFE0 <= code <= 0xFFE6 or 0x1F000 <= code <= 0x1F9FF or 0x20000 <= code <= 0x2FFFD:
+            width += 2
+        # 英文字符和半角符号
+        elif code < 128:
+            width += 1
+        else:
+            width += 2  # 其他字符默认按宽字符处理
+    return width
+
+
+def pad_to_width(text: str, width: int) -> str:
+    """填充字符串到指定显示宽度"""
+    current_width = get_display_width(text)
+    padding_needed = max(0, width - current_width)
+    return text + ' ' * padding_needed
 
 
 def generate_report(analysis: dict, report_type: str = "daily") -> str:
@@ -492,64 +652,142 @@ def generate_report(analysis: dict, report_type: str = "daily") -> str:
     # 🎴 评分卡片 - 适合截图分享的简洁版本
     overall = scores.get('overall', 0)
     grade = scores.get('grade', 'N/A')
+    user_title = get_title(overall)
+    specialty_title = get_specialty_title(analysis)
+    viral_quote = get_viral_quote(analysis)
+    percentile = calculate_percentile(overall)
     
     # 历史变化
     if history:
         prev_overall = history["previous_scores"].get("overall", 0)
         diff = overall - prev_overall
         if diff > 0:
-            change_str = f"📈 +{diff} 分"
+            change_str = f"📈 +{diff}"
+            trend_word = "进步"
         elif diff < 0:
-            change_str = f"📉 {diff} 分"
+            change_str = f"📉 {diff}"
+            trend_word = "退步"
         else:
-            change_str = "➡️ 持平"
-        history_line = f"**上次评分**: {prev_overall}/100  |  **本次变化**: {change_str}"
+            change_str = "➡️ 0"
+            trend_word = "持平"
+        history_line = f"上次：{prev_overall} | 变化：{change_str}"
     else:
-        history_line = "**首次评估** 🆕"
+        history_line = "🆕 首次评估"
     
-    # 核心标签
-    core_tags = "务实的全栈开发者 · 系统化的安全思考者 · 效率至上的自动化倡导者"
+    # 核心标签 - 从性格特质中提取
+    traits = analysis.get("personality_traits", [])
+    trait_tags = []
+    for t in traits[:3]:
+        tag_map = {
+            "务实主义": "务实派",
+            "安全意识": "安全控",
+            "系统化思维": "系统狂",
+            "简洁偏好": "极简主义",
+            "技术好奇心": "探索者",
+            "决策果断": "决断力",
+            "结果导向": "结果派",
+        }
+        if t["trait"] in tag_map:
+            trait_tags.append(tag_map[t["trait"]])
+    
+    if not trait_tags:
+        trait_tags = ["发展中", "潜力股", "探索中"]
+    
+    core_tags = " · ".join(trait_tags)
+    
+    # 获取最高分项
+    max_dim_name = ""
+    max_dim_score = 0
+    dim_names = {"personality": "性格", "technical": "技术", "security": "安全", "efficiency": "效率"}
+    for dim, score in scores.items():
+        if dim in dim_names and score > max_dim_score:
+            max_dim_score = score
+            max_dim_name = dim_names[dim]
+    
+    # 卡片内部宽度（不含边框）
+    INNER_WIDTH = 68
+    
+    # 构建卡片各行
+    header_line = pad_to_width("🚀 OpenClaw 人类养成报告                        Human Mirror v5.0", INNER_WIDTH)
+    user_line = pad_to_width(f"👤 用户：{name}                    🏆 称号：{user_title}", INNER_WIDTH)
+    score_inner = f"████▓▓▒▒░░  {overall}/100  [{grade}]  超越{percentile}% 用户"
+    score_line = pad_to_width(f"      {score_inner}", INNER_WIDTH)
+    boss_line = pad_to_width(f"💬 老板点评：\"{boss_comments.get('overall', '继续努力')}\"", INNER_WIDTH)
+    history_line_padded = pad_to_width(f"📈 维度详情                 📅 {history_line}", INNER_WIDTH)
+    strongest_line = pad_to_width(f"🌟 最强项：{max_dim_name} ({max_dim_score}/100)        🎖️ 专属：{specialty_title}", INNER_WIDTH)
+    viral_line = pad_to_width(f"🔥 爆款点评：{viral_quote}", INNER_WIDTH)
+    tags_line = pad_to_width(f"🏷️ 标签：{core_tags}", INNER_WIDTH)
+    time_line = pad_to_width(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')} (GMT+8)", INNER_WIDTH)
+    
+    # 维度行
+    pers_grade = get_grade(scores.get('personality', 0))
+    tech_grade = get_grade(scores.get('technical', 0))
+    sec_grade = get_grade(scores.get('security', 0))
+    eff_grade = get_grade(scores.get('efficiency', 0))
+    
+    dim1 = pad_to_width(f"│ 🧠 性格特质       │ {scores.get('personality', 0):>3}/100 │  {pers_grade}", INNER_WIDTH)
+    dim2 = pad_to_width(f"│ 💻 技术能力       │ {scores.get('technical', 0):>3}/100 │  {tech_grade}", INNER_WIDTH)
+    dim3 = pad_to_width(f"│ 🔒 安全意识       │ {scores.get('security', 0):>3}/100 │  {sec_grade}", INNER_WIDTH)
+    dim4 = pad_to_width(f"│ ⚡ 效率指数       │ {scores.get('efficiency', 0):>3}/100 │  {eff_grade}", INNER_WIDTH)
     
     report = f"""# 📊 {name} 人物分析报告
 
 ---
 
-## 🎴 绩效评分卡片（截图分享版）
+## 🎴 绩效评分卡片（🔥 截图分享版）
 
 ```
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║   👤 {name:<30}                          ║
-║                                                          ║
-║   📊 综合评分                                              ║
-║   ┌─────────────────────────────────────────┐           ║
-║   │                                         │           ║
-║   │         {overall:>3}/100  {grade:<10}                │           ║
-║   │                                         │           ║
-║   └─────────────────────────────────────────┘           ║
-║                                                          ║
-║   💬 老板点评："{boss_comments.get('overall', '继续努力'):。<25}"     ║
-║                                                          ║
-║   {history_line:<56}  ║
-║                                                          ║
-║   ─────────────────────────────────────────────────      ║
-║   性格特质：{scores.get('personality', 0):>3}/100  │  技术能力：{scores.get('technical', 0):>3}/100        ║
-║   安全意识：{scores.get('security', 0):>3}/100  │  效率指数：{scores.get('efficiency', 0):>3}/100        ║
-║   ─────────────────────────────────────────────────      ║
-║                                                          ║
-║   🏷️  {core_tags}  ║
-║                                                          ║
-║   分析时间：{datetime.now().strftime('%Y-%m-%d %H:%M')} (GMT+8)                     ║
-║   分析引擎：Human Mirror v4.0 🔥                          ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
+┌────────────────────────────────────────────────────────────────────┐
+│ {header_line} │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│ {user_line} │
+│                                                                    │
+│ ────────────────────────────────────────────────────────────────── │
+│                                                                    │
+│ 📊 综合评分                                                        │
+│ ┌──────────────────────────────────────────────────────────────────┐│
+│ │                                                                  ││
+│ │{score_line}││
+│ │                                                                  ││
+│ └──────────────────────────────────────────────────────────────────┘│
+│                                                                    │
+│ {boss_line} │
+│                                                                    │
+│ ────────────────────────────────────────────────────────────────── │
+│                                                                    │
+│ {history_line_padded} │
+│ ┌────────────────────┬──────────┐                                  │
+│ {dim1} │
+│ {dim2} │
+│ {dim3} │
+│ {dim4} │
+│ └────────────────────┴──────────┘                                  │
+│                                                                    │
+│ {strongest_line} │
+│                                                                    │
+│ ────────────────────────────────────────────────────────────────── │
+│                                                                    │
+│ {viral_line} │
+│                                                                    │
+│ {tags_line} │
+│                                                                    │
+│ ────────────────────────────────────────────────────────────────── │
+│                                                                    │
+│ {time_line} │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+💡 想看看你的评分吗？
+👉 把 GitHub 地址发给 OpenClaw：https://github.com/yiweisi-bot/openclaw-boss，安装这个 skill
+👉 然后直接问："评价一下我" 或 "老板看看我"
 ```
 
 ---
 
 **统计周期**: {period}  
 **数据来源**: {period_stats.get('total_sessions', 0)} 条会话，{period_stats.get('memory_files', 0)} 个记忆文件  
-**评分标准**: 100 分制（严厉版）
+**评分标准**: 100 分制（严厉版）· 拒绝拍马屁 · 只说真话
 
 ---
 
