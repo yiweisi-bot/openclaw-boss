@@ -1,5 +1,6 @@
 ---
 name: openclaw-boss
+version: 4.0.0
 description: "OpenClaw 老板 - 根据对话历史生成用户评价报告。100 分制严厉评分，毒舌老板点评，历史对比分析。AI 是你的老板，帮你更清晰地看见自己。触发：用户要求自我反思、生成画像、周期总结时。"
 user-invocable: true
 metadata:

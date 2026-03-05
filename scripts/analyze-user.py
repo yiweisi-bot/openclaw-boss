@@ -489,12 +489,66 @@ def generate_report(analysis: dict, report_type: str = "daily") -> str:
         title = f"📊 {name} 人物分析报告"
         period = "今日"
     
-    report = f"""# {title}
+    # 🎴 评分卡片 - 适合截图分享的简洁版本
+    overall = scores.get('overall', 0)
+    grade = scores.get('grade', 'N/A')
+    
+    # 历史变化
+    if history:
+        prev_overall = history["previous_scores"].get("overall", 0)
+        diff = overall - prev_overall
+        if diff > 0:
+            change_str = f"📈 +{diff} 分"
+        elif diff < 0:
+            change_str = f"📉 {diff} 分"
+        else:
+            change_str = "➡️ 持平"
+        history_line = f"**上次评分**: {prev_overall}/100  |  **本次变化**: {change_str}"
+    else:
+        history_line = "**首次评估** 🆕"
+    
+    # 核心标签
+    core_tags = "务实的全栈开发者 · 系统化的安全思考者 · 效率至上的自动化倡导者"
+    
+    report = f"""# 📊 {name} 人物分析报告
 
-**分析时间**: {datetime.now().strftime('%Y-%m-%d %H:%M')} (GMT+8)  
+---
+
+## 🎴 绩效评分卡片（截图分享版）
+
+```
+╔══════════════════════════════════════════════════════════╗
+║                                                          ║
+║   👤 {name:<30}                          ║
+║                                                          ║
+║   📊 综合评分                                              ║
+║   ┌─────────────────────────────────────────┐           ║
+║   │                                         │           ║
+║   │         {overall:>3}/100  {grade:<10}                │           ║
+║   │                                         │           ║
+║   └─────────────────────────────────────────┘           ║
+║                                                          ║
+║   💬 老板点评："{boss_comments.get('overall', '继续努力'):。<25}"     ║
+║                                                          ║
+║   {history_line:<56}  ║
+║                                                          ║
+║   ─────────────────────────────────────────────────      ║
+║   性格特质：{scores.get('personality', 0):>3}/100  │  技术能力：{scores.get('technical', 0):>3}/100        ║
+║   安全意识：{scores.get('security', 0):>3}/100  │  效率指数：{scores.get('efficiency', 0):>3}/100        ║
+║   ─────────────────────────────────────────────────      ║
+║                                                          ║
+║   🏷️  {core_tags}  ║
+║                                                          ║
+║   分析时间：{datetime.now().strftime('%Y-%m-%d %H:%M')} (GMT+8)                     ║
+║   分析引擎：Human Mirror v4.0 🔥                          ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+---
+
 **统计周期**: {period}  
 **数据来源**: {period_stats.get('total_sessions', 0)} 条会话，{period_stats.get('memory_files', 0)} 个记忆文件  
-**分析引擎**: Human Mirror v4.0 🔥  
 **评分标准**: 100 分制（严厉版）
 
 ---
