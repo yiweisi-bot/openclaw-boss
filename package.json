@@ -22,6 +22,15 @@
     "emoji": "💼",
     "requires": {
       "bins": ["python3"]
+    },
+    "onload": {
+      "script": ".onload",
+      "description": "自动配置周报和月报定时任务"
+    },
+    "features": {
+      "scheduledReports": true,
+      "weeklyReport": "每周日 22:00",
+      "monthlyReport": "每月 1 日 09:00"
     }
   }
 }

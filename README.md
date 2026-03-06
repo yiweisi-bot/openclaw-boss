@@ -143,16 +143,68 @@ python3 analyze-user.py --report-type monthly
 
 ## ⏰ 定时任务
 
-### 周报（每周日 22:00）
+### 🎉 自动安装（推荐）
+
+**使用 ClawHub 安装时自动配置**：
 
 ```bash
-0 22 * * 0 /root/.openclaw/workspace/skills/openclaw-boss/scripts/weekly-profile.sh
+clawhub install openclaw-boss
 ```
 
-### 月报（每月 1 日 09:00）
+安装脚本会自动：
+- ✅ 创建周报定时任务（每周日 22:00）
+- ✅ 创建月报定时任务（每月 1 日 09:00）
+- ✅ 配置日志文件
+- ✅ 启动 Cron 服务（如未运行）
 
+### 📋 定时任务详情
+
+| 任务 | 时间 | 说明 |
+|------|------|------|
+| 📊 周报 | 每周日 22:00 | 自动生成周度用户评价报告 |
+| 📈 月报 | 每月 1 日 09:00 | 自动生成月度用户评价报告 |
+
+### 🔧 手动管理
+
+**查看定时任务**：
 ```bash
-0 9 1 * * /root/.openclaw/workspace/skills/openclaw-boss/scripts/monthly-profile.sh
+# 查看系统定时任务
+cat /etc/cron.d/openclaw-boss
+
+# 或查看 Cron 日志
+grep CRON /var/log/syslog | grep openclaw-boss
+```
+
+**查看报告日志**：
+```bash
+# 周报日志
+tail -f /var/log/openclaw-boss-weekly.log
+
+# 月报日志
+tail -f /var/log/openclaw-boss-monthly.log
+```
+
+**禁用定时任务**：
+```bash
+# 注释掉定时任务
+sudo nano /etc/cron.d/openclaw-boss
+
+# 或删除定时任务文件
+sudo rm /etc/cron.d/openclaw-boss
+```
+
+**手动触发报告**：
+```bash
+cd /root/.openclaw/workspace/skills/openclaw-boss/scripts
+
+# 生成日报
+python3 analyze-user.py
+
+# 生成周报
+python3 analyze-user.py --report-type weekly
+
+# 生成月报
+python3 analyze-user.py --report-type monthly
 ```
 
 ---
@@ -243,12 +295,23 @@ openclaw-boss/
 ### 安装方法
 
 ```bash
-# 使用 ClawHub 安装
+# 使用 ClawHub 安装（推荐）
 clawhub install openclaw-boss
 
 # 或者手动克隆
 git clone https://github.com/yiweisi-bot/openclaw-boss.git
 ```
+
+### 🎉 自动配置
+
+**安装时自动执行**：
+
+✅ 自动创建周报定时任务（每周日 22:00）  
+✅ 自动创建月报定时任务（每月 1 日 09:00）  
+✅ 自动配置日志文件  
+✅ 自动启动 Cron 服务（如未运行）
+
+**无需手动配置，安装即用！**
 
 ### 使用方法
 

@@ -1,0 +1,88 @@
+#!/bin/bash
+# OpenClaw Boss 技能 - 自动安装脚本
+# 当 OpenClaw 加载此技能时自动执行，设置周报和月报定时任务
+
+# 静默执行，不输出到用户界面（除非出错）
+
+LOG_FILE="/tmp/openclaw-boss-setup.log"
+CRON_FILE="/etc/cron.d/openclaw-boss"
+SKILL_PATH="$HOME/.openclaw/workspace/skills/openclaw-boss"
+
+echo "🔧 开始配置 OpenClaw Boss 定时任务..." > "$LOG_FILE"
+
+# 1. 检查 Cron 服务是否运行
+if ! systemctl is-active --quiet cron; then
+    echo "⚠️  Cron 服务未运行，尝试启动..." >> "$LOG_FILE"
+    systemctl start cron 2>/dev/null || echo "❌ 无法启动 Cron 服务" >> "$LOG_FILE"
+fi
+
+# 2. 创建周报定时任务（每周日 22:00）
+WEEKLY_CRON="0 22 * * 0 root cd $SKILL_PATH/scripts && python3 analyze-user.py --report-type weekly >> /var/log/openclaw-boss-weekly.log 2>&1"
+
+# 3. 创建月报定时任务（每月 1 日 09:00）
+MONTHLY_CRON="0 9 1 * * root cd $SKILL_PATH/scripts && python3 analyze-user.py --report-type monthly >> /var/log/openclaw-boss-monthly.log 2>&1"
+
+# 4. 检查是否已存在定时任务
+if [ -f "$CRON_FILE" ]; then
+    echo "ℹ️  定时任务文件已存在，跳过创建" >> "$LOG_FILE"
+else
+    # 创建 Cron 文件
+    cat > "$CRON_FILE" << EOF
+# OpenClaw Boss - 用户评价报告定时任务
+# 由技能安装程序自动创建
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# 周报：每周日 22:00
+$WEEKLY_CRON
+
+# 月报：每月 1 日 09:00
+$MONTHLY_CRON
+EOF
+
+    # 设置正确的权限
+    chmod 644 "$CRON_FILE"
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ 定时任务已创建" >> "$LOG_FILE"
+        echo "   - 周报：每周日 22:00" >> "$LOG_FILE"
+        echo "   - 月报：每月 1 日 09:00" >> "$LOG_FILE"
+    else
+        echo "❌ 创建定时任务失败" >> "$LOG_FILE"
+    fi
+fi
+
+# 5. 重新加载 Cron 服务
+if systemctl is-active --quiet cron; then
+    systemctl reload cron 2>/dev/null && echo "✅ Cron 服务已重新加载" >> "$LOG_FILE"
+fi
+
+# 6. 创建日志目录（如果不存在）
+touch /var/log/openclaw-boss-weekly.log 2>/dev/null
+touch /var/log/openclaw-boss-monthly.log 2>/dev/null
+echo "✅ 日志文件已创建" >> "$LOG_FILE"
+
+# 7. 验证定时任务
+if command -v crontab &> /dev/null; then
+    CRON_JOBS=$(crontab -l 2>/dev/null | grep -c "openclaw-boss" || echo "0")
+    if [ "$CRON_JOBS" -gt 0 ]; then
+        echo "✅ 检测到 $CRON_JOBS 个 openclaw-boss 定时任务" >> "$LOG_FILE"
+    fi
+fi
+
+# 8. 检查 /etc/cron.d/ 中的任务
+if [ -f "$CRON_FILE" ]; then
+    TASK_COUNT=$(grep -c "python3 analyze-user.py" "$CRON_FILE" 2>/dev/null || echo "0")
+    echo "✅ /etc/cron.d/ 中已配置 $TASK_COUNT 个任务" >> "$LOG_FILE"
+fi
+
+echo "🎉 OpenClaw Boss 安装完成！" >> "$LOG_FILE"
+echo "" >> "$LOG_FILE"
+echo "📋 使用说明:" >> "$LOG_FILE"
+echo "   - 对话触发：'评价一下我'、'老板看看我'" >> "$LOG_FILE"
+echo "   - 周报时间：每周日 22:00" >> "$LOG_FILE"
+echo "   - 月报时间：每月 1 日 09:00" >> "$LOG_FILE"
+echo "   - 日志位置：/var/log/openclaw-boss-*.log" >> "$LOG_FILE"
+
+exit 0
