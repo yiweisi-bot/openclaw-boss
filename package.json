@@ -1,6 +1,6 @@
 {
   "name": "openclaw-boss",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "OpenClaw Boss - AI 老板根据你的对话历史生成评价报告。100 分制严厉评分，毒舌老板点评，历史对比分析。",
   "author": "Winston & Yiweisi",
   "license": "MIT",
