@@ -4,7 +4,10 @@ version: 5.1.0
 description: "OpenClaw 老板 - 根据对话历史生成用户评价报告。Use when: user asks for self-reflection, user profile, performance review, or analysis. Triggers: 评价一下我，分析一下我，老板看看我，生成用户报告，我是怎样的人，openclaw boss, user profile, performance review, self analysis."
 user-invocable: true
 metadata:
-  { "openclaw": { "emoji": "💼", "requires": { "bins": ["python3"] } } }
+  openclaw:
+    emoji: "💼"
+    requires:
+      bins: ["python3"]
 ---
 
 # 💼 OpenClaw Boss - OpenClaw 老板
