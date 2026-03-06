@@ -1,0 +1,19 @@
+# ClawHub 发布时忽略的文件
+
+# 内部文档
+PUBLISH_GUIDE.md
+
+# Git 相关
+.git/
+.gitignore
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+
+# 本地配置
+config.local.json
+.env.local
