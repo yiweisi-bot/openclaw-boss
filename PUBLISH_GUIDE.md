@@ -10,13 +10,30 @@
 - [x] .onload 自动安装脚本（自动配置定时任务）
 - [x] 版本更新到 v5.1.0
 
-## ⏳ 待完成：发布到 ClawHub
+## ✅ 发布状态
+
+**✅ 发布准备完成**：
+- [x] GitHub 仓库代码已推送
+- [x] 版本号：v5.1.0
+- [x] SKILL.md frontmatter 格式正确
+- [x] 所有文档已更新
+- [x] ClawHub 登录成功（@yiweisi-bot）
+
+**⏳ 等待 GitHub 账号满足 14 天要求**：
+
+ClawHub 要求 GitHub 账号注册至少 14 天才能发布技能。
+
+- **GitHub 账号**: yiweisi-bot
+- **注册时间**: 2026-02-27
+- **可发布时间**: 2026-03-13（约 9 天后）
+
+---
 
 ### 当前状态
 
 **最新版本**: v5.1.0  
 **GitHub**: https://github.com/yiweisi-bot/openclaw-boss  
-**提交**: `2c5b271` - 🔖 更新版本号到 v5.1.0
+**提交**: `6e9d838` - 🔧 修复 SKILL.md frontmatter YAML 格式
 
 ### 发布步骤
 
@@ -193,6 +210,43 @@ v5.1.0:
 2. ✅ 通知用户可以使用
 3. ⏳ 收集反馈并迭代
 4. ⏳ 监控定时任务执行情况
+
+---
+
+## ⚠️ 发布限制
+
+**ClawHub 发布要求**：
+- GitHub 账号必须注册至少 14 天
+- 这是为了防止垃圾内容和滥用
+
+**当前状态**：
+- GitHub 账号：yiweisi-bot
+- 注册时间：2026-02-27
+- 可发布时间：2026-03-13（还需等待 9 天）
+
+**临时解决方案**：
+在等待期间，用户可以通过以下方式安装：
+
+```bash
+# 方法 1：直接从 GitHub 克隆
+git clone https://github.com/yiweisi-bot/openclaw-boss.git \
+  ~/.openclaw/workspace/skills/openclaw-boss
+
+# 方法 2：使用 clawhub sync（如果配置了本地技能）
+cd ~/.openclaw/workspace/skills
+clawhub sync
+```
+
+---
+
+## 📅 发布计划
+
+| 日期 | 事件 |
+|------|------|
+| 2026-02-27 | GitHub 账号注册 |
+| 2026-03-06 | 技能开发完成（v5.1.0） |
+| 2026-03-13 | GitHub 账号满 14 天，可以发布 |
+| 2026-03-13 | 发布到 ClawHub |
 
 ---
 
