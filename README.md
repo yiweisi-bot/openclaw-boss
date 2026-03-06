@@ -260,6 +260,84 @@ git clone https://github.com/yiweisi-bot/openclaw-boss.git
 
 ---
 
+## 📱 版本选择指南 ⭐ 通过触发语句控制
+
+**根据用户输入的关键词自动选择卡片格式：**
+
+### 🖥️ 触发完整版（桌面 ASCII 艺术版）的关键词
+
+用户语句中包含以下任意词汇时 → 使用桌面版（适合截图分享）
+
+**关键词列表**：
+- "完整版"
+- "截图" / "截图版"
+- "电脑版" / "桌面版"
+- "艺术版" / "ASCII"
+- "卡片"
+- "好看点" / "漂亮点"
+- "截图分享"
+- "发朋友圈"
+
+**示例**：
+- "评价一下我，要完整版" → 桌面版 ✅
+- "生成截图版报告" → 桌面版 ✅
+- "我要看 ASCII 卡片" → 桌面版 ✅
+- "来个好看的版本" → 桌面版 ✅
+- "生成卡片版" → 桌面版 ✅
+
+### 📱 默认简洁版（手机文本版）
+
+**不包含上述关键词时** → 使用手机版（默认，适合快速阅读）
+
+**示例**：
+- "评价一下我" → 手机版 ✅
+- "分析一下我" → 手机版 ✅
+- "老板看看我" → 手机版 ✅
+- "生成用户报告" → 手机版 ✅
+
+### 🔧 技术实现
+
+模型根据用户输入自动判断：
+
+```python
+# 伪代码逻辑
+完整版关键词 = ["完整版", "截图", "截图版", "电脑版", "桌面版", "艺术版", "ASCII", "卡片", "好看点", "漂亮点", "截图分享", "发朋友圈"]
+
+if 用户输入中包含任意完整版关键词:
+    运行命令：python3 analyze-user.py --format desktop
+else:
+    运行命令：python3 analyze-user.py --format mobile  # 默认
+```
+
+### 📋 命令行参数
+
+```bash
+cd /root/.openclaw/workspace/skills/openclaw-boss/scripts
+
+# 日报（默认：手机版简洁版）
+python3 analyze-user.py
+
+# 仅手机版（适合小屏幕阅读）
+python3 analyze-user.py --format mobile
+
+# 仅桌面版（适合截图分享）
+python3 analyze-user.py --format desktop
+
+# 两个版本都输出
+python3 analyze-user.py --format both
+
+# 周报
+python3 analyze-user.py --report-type weekly
+
+# 月报
+python3 analyze-user.py --report-type monthly
+
+# 自定义会话数量
+python3 analyze-user.py --limit 100
+```
+
+---
+
 ## 🤝 贡献指南
 
 欢迎贡献！可以通过以下方式：
