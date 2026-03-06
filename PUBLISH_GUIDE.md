@@ -12,20 +12,21 @@
 
 ## ✅ 发布状态
 
-**✅ 发布准备完成**：
+**🎉 发布成功！**
+
+**✅ 发布完成清单**：
 - [x] GitHub 仓库代码已推送
 - [x] 版本号：v5.1.0
 - [x] SKILL.md frontmatter 格式正确
 - [x] 所有文档已更新
-- [x] ClawHub 登录成功（@yiweisi-bot）
+- [x] ClawHub 登录成功（@winston-wwzhen）
+- [x] **技能已发布到 ClawHub**
 
-**⏳ 等待 GitHub 账号满足 14 天要求**：
-
-ClawHub 要求 GitHub 账号注册至少 14 天才能发布技能。
-
-- **GitHub 账号**: yiweisi-bot
-- **注册时间**: 2026-02-27
-- **可发布时间**: 2026-03-13（约 9 天后）
+**发布详情**：
+- **Skill ID**: `k97df0dqpszwz0c0erbtqpf7gs82dw18`
+- **发布账号**: @winston-wwzhen
+- **发布时间**: 2026-03-06 02:47 UTC
+- **版本**: v5.1.0
 
 ---
 
@@ -33,7 +34,8 @@ ClawHub 要求 GitHub 账号注册至少 14 天才能发布技能。
 
 **最新版本**: v5.1.0  
 **GitHub**: https://github.com/yiweisi-bot/openclaw-boss  
-**提交**: `6e9d838` - 🔧 修复 SKILL.md frontmatter YAML 格式
+**ClawHub**: 已发布  
+**发布账号**: @winston-wwzhen
 
 ### 发布步骤
 
@@ -224,29 +226,49 @@ v5.1.0:
 - 注册时间：2026-02-27
 - 可发布时间：2026-03-13（还需等待 9 天）
 
-**临时解决方案**：
-在等待期间，用户可以通过以下方式安装：
+**安装方法**：
 
 ```bash
-# 方法 1：直接从 GitHub 克隆
+# 方法 1：使用 ClawHub 安装（推荐）
+clawhub install openclaw-boss
+
+# 方法 2：直接从 GitHub 克隆
 git clone https://github.com/yiweisi-bot/openclaw-boss.git \
   ~/.openclaw/workspace/skills/openclaw-boss
-
-# 方法 2：使用 clawhub sync（如果配置了本地技能）
-cd ~/.openclaw/workspace/skills
-clawhub sync
 ```
 
 ---
 
-## 📅 发布计划
+## 📅 发布历史
 
-| 日期 | 事件 |
-|------|------|
-| 2026-02-27 | GitHub 账号注册 |
-| 2026-03-06 | 技能开发完成（v5.1.0） |
-| 2026-03-13 | GitHub 账号满 14 天，可以发布 |
-| 2026-03-13 | 发布到 ClawHub |
+| 日期 | 事件 | 状态 |
+|------|------|------|
+| 2026-02-27 | GitHub 账号（yiweisi-bot）注册 | ✅ 已完成 |
+| 2026-03-06 | 技能开发完成（v5.1.0） | ✅ 已完成 |
+| 2026-03-06 | 使用 Winston 账号发布到 ClawHub | ✅ **已发布** |
+| 2026-03-06 | ClawHub 审核通过 | ⏳ 审核中 |
+
+---
+
+## 🎉 发布成功！
+
+**Skill ID**: `k97df0dqpszwz0c0erbtqpf7gs82dw18`  
+**发布账号**: @winston-wwzhen  
+**发布时间**: 2026-03-06 02:47 UTC  
+**版本**: v5.1.0
+
+**安装命令**：
+```bash
+clawhub install openclaw-boss
+```
+
+**功能亮点**：
+- 🎉 自动安装脚本（安装时自动配置定时任务）
+- 📱 简洁版/完整版智能选择
+- 📊 完整 13 部分报告结构
+- 🎴 绩效评分卡片（手机版/桌面版）
+- 🦞 龙虾养人类指数
+- ⏰ 周报/月报自动推送
 
 ---
 
