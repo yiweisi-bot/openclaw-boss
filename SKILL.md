@@ -1,7 +1,7 @@
 ---
 name: openclaw-boss
 version: 5.1.0
-description: "OpenClaw 老板 - 根据对话历史生成用户评价报告。100 分制严厉评分，毒舌老板点评，历史对比分析。AI 是你的老板，帮你更清晰地看见自己。触发：用户要求自我反思、生成画像、周期总结时。"
+description: "OpenClaw 老板 - 根据对话历史生成用户评价报告。Use when: user asks for self-reflection, user profile, performance review, or analysis. Triggers: 评价一下我，分析一下我，老板看看我，生成用户报告，我是怎样的人，openclaw boss, user profile, performance review, self analysis."
 user-invocable: true
 metadata:
   { "openclaw": { "emoji": "💼", "requires": { "bins": ["python3"] } } }
@@ -24,13 +24,29 @@ metadata:
 
 ## 什么时候使用
 
-✅ **自动触发场景**:
+✅ **自动触发场景** (用户说出以下任意语句时自动触发):
+- "评价一下我"
+- "分析一下我"
 - "分析一下我是什么样的人"
 - "生成用户评价报告"
 - "老板看看我"
 - "老板点评一下"
+- "openclaw boss"
+- "openclaw 老板"
+- "我是怎样的人"
+- "我是什么样的人"
+- "我的表现如何"
+- "给我打个分"
+- "用户画像"
+- "performance review"
+- "user profile"
+- "self analysis"
+- "analyze me"
 - "OpenClaw 怎么养人类"
-- 定时任务：周报（每周日 22:00）、月报（每月 1 日 09:00）
+
+✅ **定时任务**:
+- 周报：每周日 22:00
+- 月报：每月 1 日 09:00
 
 ## 核心功能
 
@@ -61,8 +77,17 @@ metadata:
 ```bash
 cd /root/.openclaw/workspace/skills/openclaw-boss/scripts
 
-# 日报
+# 日报（默认：手机版简洁版）
 python3 analyze-user.py
+
+# 仅手机版（适合小屏幕阅读）
+python3 analyze-user.py --format mobile
+
+# 仅桌面版（适合截图分享）
+python3 analyze-user.py --format desktop
+
+# 两个版本都输出
+python3 analyze-user.py --format both
 
 # 周报
 python3 analyze-user.py --report-type weekly
@@ -84,18 +109,83 @@ python3 analyze-user.py --limit 100
 0 9 1 * * /root/.openclaw/workspace/skills/openclaw-boss/scripts/monthly-profile.sh
 ```
 
-## 输出格式 ⭐⭐⭐ 最重要 ⭐⭐⭐
+## 📱 版本选择指南 ⭐ 通过触发语句控制 ⭐
+
+**根据用户输入的关键词自动选择卡片格式：**
+
+### 触发完整版（桌面 ASCII 艺术版）的关键词：
+用户语句中包含以下任意词汇时 → 使用 `--format desktop`
+
+- "完整版"
+- "截图" / "截图版"
+- "电脑版" / "桌面版"
+- "艺术版" / "ASCII"
+- "卡片"
+- "好看点" / "漂亮点"
+- "截图分享"
+- "发朋友圈"
+
+**示例**：
+- "评价一下我，要完整版"
+- "生成截图版报告"
+- "我要看 ASCII 卡片"
+- "来个好看的版本"
+- "生成卡片版"
+
+### 默认简洁版（手机文本版）：
+**不包含上述关键词时** → 使用 `--format mobile`（默认）
+
+**示例**：
+- "评价一下我"
+- "分析一下我"
+- "老板看看我"
+- "生成用户报告"
+
+### 技术实现：
+模型根据用户输入判断：
+1. 检测用户输入是否包含完整版关键词
+2. 如果包含 → 运行 `python3 analyze-user.py --format desktop`
+3. 否则 → 运行 `python3 analyze-user.py --format mobile`（默认）
+
+---
+
+## 🎯 输出格式 ⭐⭐⭐ 最重要 ⭐⭐⭐
+
+### ⭐ 卡片格式选择逻辑（重要！）
+
+**模型需要根据用户输入自动判断使用哪种卡片格式：**
+
+```python
+# 伪代码逻辑
+完整版关键词 = ["完整版", "截图", "截图版", "电脑版", "桌面版", "艺术版", "ASCII", "卡片", "好看点", "漂亮点", "截图分享", "发朋友圈"]
+
+if 用户输入中包含任意完整版关键词:
+    运行命令：python3 analyze-user.py --format desktop
+else:
+    运行命令：python3 analyze-user.py --format mobile  # 默认
+```
+
+**示例判断**：
+- 用户说"评价一下我" → 手机版 ✅
+- 用户说"评价一下我，要完整版" → 桌面版 ✅
+- 用户说"生成截图版报告" → 桌面版 ✅
+- 用户说"来个 ASCII 卡片" → 桌面版 ✅
+- 用户说"老板看看我" → 手机版 ✅
+
+---
+
+## 📋 报告结构要求 ⭐⭐⭐
 
 **⚠️ 警告：每次运行必须输出完整报告！绝对不要简化！**
 
 **❌ 错误做法**：只展示绩效评分卡片 + 简单总结（这是 incomplete！）
 
-**✅ 正确做法**：展示完整的 10 个部分，每个部分都要详细内容
+**✅ 正确做法**：展示完整的 10+ 个部分，每个部分都要详细内容
 
-### 完整报告结构（10 个部分，缺一不可）
+### 完整报告结构（10+ 个部分，缺一不可）
 
 **🎴 第一部分：绩效评分卡片（放在最前面）**
-- ASCII 艺术卡片，直接显示（不要放在代码块中）
+- 根据用户输入选择手机版或桌面版（见上方判断逻辑）
 - 包含：用户信息、综合评分、维度详情、龙虾养人类指数
 - 卡片底部：安装使用说明（用于病毒式传播）
 

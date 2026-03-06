@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-User Profile Analyzer v4.0 - 用户评价分析器（历史对比版）
+User Profile Analyzer v5.0 - 用户评价分析器（历史对比版 + 响应式卡片）
 
 增强功能：
 - 100 分制评分（严厉）
@@ -9,9 +9,16 @@ User Profile Analyzer v4.0 - 用户评价分析器（历史对比版）
 - 毒舌老板点评
 - 历史报告对比（进步/退步分析）
 - 成长趋势追踪
+- 📱 响应式卡片：手机版（简洁）+ 桌面版（ASCII 艺术）
 
 Usage:
-    python3 analyze-user.py [--limit N] [--output PATH] [--report-type daily|weekly|monthly]
+    python3 analyze-user.py [--limit N] [--output PATH] [--report-type daily|weekly|monthly] [--format mobile|desktop|both]
+
+Args:
+    --format: 卡片格式
+              - mobile: 仅手机版（简洁文本，适合小屏幕）
+              - desktop: 仅桌面版（ASCII 艺术，适合截图）
+              - both: 两个版本都输出（默认，手机版在前）
 """
 
 import os
@@ -676,8 +683,14 @@ def pad_to_width(text: str, width: int) -> str:
     return text + ' ' * padding_needed
 
 
-def generate_report(analysis: dict, report_type: str = "daily") -> str:
-    """生成用户评价报告（含历史对比）"""
+def generate_report(analysis: dict, report_type: str = "daily", card_format: str = "both") -> str:
+    """生成用户评价报告（含历史对比）
+    
+    Args:
+        analysis: 分析数据
+        report_type: 报告类型 (daily/weekly/monthly)
+        card_format: 卡片格式 (mobile/desktop/both)
+    """
     
     basic_info = analysis.get("basic_info", {})
     name = basic_info.get("name", "用户")
@@ -794,11 +807,39 @@ def generate_report(analysis: dict, report_type: str = "daily") -> str:
     dim3 = pad_to_width(f"│ 🔒 安全意识       │ {scores.get('security', 0):>3}/100 │  {sec_grade}", INNER_WIDTH)
     dim4 = pad_to_width(f"│ ⚡ 效率指数       │ {scores.get('efficiency', 0):>3}/100 │  {eff_grade}", INNER_WIDTH)
     
-    report = f"""# 📊 {name} 人物分析报告
+    # 根据 card_format 参数构建卡片内容
+    mobile_card = f"""### 📱 手机版（简洁版）
 
----
+**🚀 OpenClaw 人类养成报告** | 老板：{ai_name}
 
-## 🎴 绩效评分卡片（🔥 截图分享版）
+**👤 用户**: {name}  |  **🏆 称号**: {user_title}
+
+**📊 综合评分**: `{overall}/100 [{grade}]`  超越{percentile}%用户
+
+**💬 老板点评**: "{boss_comments.get('overall', '继续努力')}"
+
+**📈 趋势**: {history_line}
+
+**维度详情**:
+- 🧠 性格特质：{scores.get('personality', 0)}/100 [{pers_grade}]
+- 💻 技术能力：{scores.get('technical', 0)}/100 [{tech_grade}]
+- 🔒 安全意识：{scores.get('security', 0)}/100 [{sec_grade}]
+- ⚡ 效率指数：{scores.get('efficiency', 0)}/100 [{eff_grade}]
+
+**🌟 最强项**: {max_dim_name} ({max_dim_score}/100)
+
+**🎖️ 专属称号**: {specialty_title}
+
+**🔥 爆款点评**: {viral_quote}
+
+**🏷️ 标签**: {core_tags}
+
+**🦞 龙虾养人类**: {symbiosis_score}/100 {symbiosis_emoji}{symbiosis_comment}
+
+**⏰ 评估时间**: {datetime.now().strftime('%Y-%m-%d %H:%M')} (GMT+8)
+"""
+
+    desktop_card = f"""### 🖥️ 桌面版（ASCII 艺术版 - 适合截图分享）
 
 ┌────────────────────────────────────────────────────────────────────┐
 │ {header_line} │
@@ -844,6 +885,21 @@ def generate_report(analysis: dict, report_type: str = "daily") -> str:
 │ {time_line} │
 │                                                                    │
 └────────────────────────────────────────────────────────────────────┘
+"""
+
+    # 根据 card_format 参数选择卡片版本
+    if card_format == "mobile":
+        cards_section = "## 🎴 绩效评分卡片\n\n" + mobile_card
+    elif card_format == "desktop":
+        cards_section = "## 🎴 绩效评分卡片\n\n" + desktop_card
+    else:  # both
+        cards_section = "## 🎴 绩效评分卡片\n\n" + mobile_card + "\n---\n\n" + desktop_card
+
+    report = f"""# 📊 {name} 人物分析报告
+
+---
+
+{cards_section}
 
 💡 想看看你的评分吗？
 
@@ -1127,11 +1183,14 @@ _记住：老板虽然毒舌，但也是为你好。加油！_ 💪
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='用户评价分析器 v4.0（历史对比版）')
+    parser = argparse.ArgumentParser(description='用户评价分析器 v5.0（历史对比版 + 响应式卡片）')
     parser.add_argument('--limit', type=int, default=50, help='分析最近 N 条会话')
     parser.add_argument('--output', type=str, help='输出文件路径')
     parser.add_argument('--report-type', type=str, default='daily', 
                        choices=['daily', 'weekly', 'monthly'], help='报告类型')
+    parser.add_argument('--format', type=str, default='mobile',
+                       choices=['mobile', 'desktop', 'both'], 
+                       help='卡片格式：mobile=仅手机版（默认），desktop=仅桌面版，both=两个版本')
     
     args = parser.parse_args()
     
@@ -1162,8 +1221,9 @@ def main():
     analysis = analyze_user_data(memories, sessions, args.report_type)
     
     print("🎨 正在生成报告（历史对比版）...")
+    print(f"   📱 卡片格式：{args.format}")
     
-    report = generate_report(analysis, args.report_type)
+    report = generate_report(analysis, args.report_type, args.format)
     
     if args.output:
         output_path = Path(args.output)
