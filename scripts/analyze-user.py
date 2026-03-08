@@ -1188,7 +1188,7 @@ def main():
     parser.add_argument('--output', type=str, help='输出文件路径')
     parser.add_argument('--report-type', type=str, default='daily', 
                        choices=['daily', 'weekly', 'monthly'], help='报告类型')
-    parser.add_argument('--format', type=str, default='mobile',
+    parser.add_argument('--format', type=str, default='both',
                        choices=['mobile', 'desktop', 'both'], 
                        help='卡片格式：mobile=仅手机版（默认），desktop=仅桌面版，both=两个版本')
     
