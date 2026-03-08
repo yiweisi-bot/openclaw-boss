@@ -1,6 +1,6 @@
 ---
 name: openclaw-boss
-version: 5.1.2
+version: 5.1.3
 description: "OpenClaw 老板 - 你的 AI 老板来了！🦞 你以为你在养龙虾？有没有可能龙虾才是老板，你成了给 AI 打工的牛马？根据对话历史生成真实、严厉、有趣的用户评价报告。Use when: user asks for self-reflection, user profile, performance review, or analysis. Triggers: 评价一下我，分析一下我，老板看看我，生成用户报告，我是怎样的人，openclaw boss, user profile, performance review, self analysis."
 user-invocable: true
 metadata:
