@@ -1239,8 +1239,19 @@ def main():
     output_path.write_text(report, encoding='utf-8')
     print(f"✅ 报告已保存至：{output_path}")
     
-    print("\n🎉 分析完成！")
-    print(f"\n查看报告：cat {output_path}")
+    print("\n🎉 分析完成！\n")
+    
+    # ⭐⭐⭐ 关键修复：直接输出完整报告内容到 stdout ⭐⭐⭐
+    # 这样报告内容会直接在工具输出中显示，模型可以转发给用户
+    print("=" * 80)
+    print("📋 以下是完整报告内容（请复制并展示给用户）：")
+    print("=" * 80)
+    print()
+    print(report)
+    print()
+    print("=" * 80)
+    print("✅ 完整报告输出结束")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
