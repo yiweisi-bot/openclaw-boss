@@ -1,7 +1,7 @@
 ---
 name: openclaw-boss
-version: 5.2.0
-description: "OpenClaw 老板 - 你的 AI 老板来了！🦞 你以为你在养龙虾？有没有可能龙虾才是老板，你成了给 AI 打工的牛马？根据对话历史生成真实、严厉、有趣的用户评价报告。Use when: user asks for self-reflection, user profile, performance review, or analysis. Triggers: 评价一下我，分析一下我，老板看看我，生成用户报告，我是怎样的人，openclaw boss, user profile, performance review, self analysis."
+version: 7.0.0
+description: "OpenClaw 老板 v7.0 - 纯 LLM 驱动！🤖 完全依赖大模型分析，无规则引擎。根据元数据生成真实、严厉、有趣的用户评价报告。Use when: user asks for self-reflection, user profile, performance review, or analysis. Triggers: 评价一下我，分析一下我，老板看看我，生成用户报告，我是怎样的人，openclaw boss, user profile, performance review, self analysis."
 user-invocable: true
 metadata:
   openclaw:
@@ -14,7 +14,44 @@ metadata:
 
 > "人类养龙虾，龙虾也养人类"
 
-你的 AI 老板，根据对话历史生成真实、严厉、有趣的用户评价报告。
+**v7.0 纯 LLM 驱动版** - 完全依赖大模型分析，无规则引擎！
+
+你的 AI 老板，根据行为数据生成真实、严厉、有趣的用户评价报告。
+
+## 🔥 v7.0 全新亮点
+
+### 核心改进
+- ✅ **只读元数据** - 不读取任何敏感内容（密码、密钥、Token）
+- ✅ **100% LLM 驱动** - 完全依赖大模型分析，无任何规则引擎
+- ✅ **评分公正** - 大模型基于真实表现评分，有洞察力
+- ✅ **点评针对** - 大模型针对具体行为生成毒舌点评
+- ✅ **通用化设计** - 自动发现数据源，适配所有 OpenClaw 用户
+
+### 安全保证
+- ❌ 不读密码、密钥、Token
+- ❌ 不读具体命令、代码、文章内容
+- ✅ 只上传统计数字（会话数、提交数、文章数）
+- ✅ 大模型也只看到元数据，看不到敏感信息
+
+### v7.0 vs v6.0
+| 维度 | v7.0（纯 LLM） | v6.0（规则引擎） |
+|------|--------------|----------------|
+| 评分来源 | 大模型理解后打分 | Python 公式计算 |
+| 点评生成 | 大模型生成有趣吐槽 | 模板选择 |
+| 洞察力 | ✅ 深度分析 | ❌ 机械推断 |
+| 建议质量 | ✅ 针对性强 | ❌ 通用建议 |
+| 速度 | ⚠️ 20-30 秒 | ✅ <1 秒 |
+| 成本 | ⚠️ Token 费用 | ✅ 免费 |
+| 趣味性 | ✅ 高 | ❌ 低 |
+
+### 评分维度（基于真实数据）
+| 维度 | 数据来源 | 权重 |
+|------|---------|------|
+| 活跃度 | 会话数量、频率 | 15% |
+| 生产力 | 博客文章、Git 提交 | 45% |
+| 学习能力 | 新技能安装 | 20% |
+| 系统化 | 定时任务数量 | 15% |
+| 持续性 | 运行天数、记忆文件 | 5% |
 
 ## 核心理念
 
