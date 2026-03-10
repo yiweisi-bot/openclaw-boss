@@ -1,14 +1,7 @@
 ---
 name: openclaw-boss
 version: 7.4.1
-license: MIT
-description: "OpenClaw 老板 v7.4.1 - 锐评出圈版！默认纯文本报告（跨平台友好），仅当用户说 ASCII 图时才显示卡片。锐评前置、金句爆点、尖锐有趣、能出圈！由执行者 LLM 直接分析，不嵌套调用其他 LLM。根据元数据生成真实、严厉、有趣的用户评价报告。"
-user-invocable: true
-metadata:
-  openclaw:
-    emoji: "💼"
-    requires:
-      bins: ["python3"]
+description: "OpenClaw 老板 v7.4.1 - 锐评出圈版！默认纯文本报告，仅当用户说 ASCII 图时才显示卡片。锐评前置、数据驱动、个性化锐评。"
 ---
 
 # 💼 OpenClaw Boss - OpenClaw 老板
