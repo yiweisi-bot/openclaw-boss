@@ -244,25 +244,40 @@ def get_git_stats(base_dir: Path) -> dict:
     # 自动发现 Git 项目
     projects = auto_discover_git_projects(base_dir)
     
+    # 排除列表：不统计大型开源项目/fork 仓库
+    EXCLUDE_PATTERNS = [
+        "clawdbot",
+        "moltbot",
+        "node_modules",
+        ".cache",
+        "temp_git",
+    ]
+    
     for proj_dir in projects:
         try:
-            # 总提交数
-            total = run_command(f"cd {proj_dir} && git rev-list --count HEAD 2>/dev/null")
-            if total and total.isdigit():
-                stats["total_commits"] += int(total)
-                stats["available"] = True
+            # 跳过排除的项目
+            if any(pattern in proj_dir.name.lower() for pattern in EXCLUDE_PATTERNS):
+                continue
             
-            # 本周提交
+            # 总提交数（只统计活跃仓库：本周或本月有提交）
             week_commits = run_command(f"cd {proj_dir} && git log --since='1 week ago' --oneline 2>/dev/null | wc -l")
-            if week_commits and week_commits.isdigit():
-                stats["commits_this_week"] += int(week_commits)
-            
-            # 本月提交
             month_commits = run_command(f"cd {proj_dir} && git log --since='1 month ago' --oneline 2>/dev/null | wc -l")
-            if month_commits and month_commits.isdigit():
-                stats["commits_this_month"] += int(month_commits)
             
-            stats["repos"].append(proj_dir.name)
+            week_count = int(week_commits) if week_commits and week_commits.isdigit() else 0
+            month_count = int(month_commits) if month_commits and month_commits.isdigit() else 0
+            
+            # 只统计活跃仓库（本周或本月有提交）
+            if week_count > 0 or month_count > 0:
+                stats["commits_this_week"] += week_count
+                stats["commits_this_month"] += month_count
+                
+                # 计算总提交（只算活跃仓库）
+                total = run_command(f"cd {proj_dir} && git rev-list --count HEAD 2>/dev/null")
+                if total and total.isdigit():
+                    stats["total_commits"] += int(total)
+                    stats["available"] = True
+                
+                stats["repos"].append(proj_dir.name)
         except:
             pass
     
