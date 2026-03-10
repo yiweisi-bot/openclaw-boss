@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-用户评价分析器 v7.2 - 跨平台版（Windows/Linux/macOS）
+用户评价分析器 v7.4 - 锐评出圈版（Windows/Linux/macOS）
 
 由执行脚本的 LLM 直接分析（不需要调用另一个 LLM）：
 - ✅ 元数据收集（本地脚本）
@@ -305,16 +305,19 @@ def main():
     parser.add_argument('--format', type=str, default='mobile',
                        choices=['mobile', 'desktop', 'both'], 
                        help='卡片格式（默认 mobile）')
+    parser.add_argument('--show-ascii', action='store_true',
+                       help='是否显示 ASCII 绩效卡片（默认不显示）')
     
     args = parser.parse_args()
     
-    print("🚀 OpenClaw 人类养成报告生成器 v7.2")
+    print("🚀 OpenClaw 人类养成报告生成器 v7.4")
     print("=" * 60)
     print(f"🤖 LLM 原生版 · 由执行者直接分析")
     print(f"🌍 跨平台版 · 系统：{platform.system()} {platform.version()}")
     print(f"🐍 Python: {platform.python_version()}")
     print(f"📁 工作空间：{WORKSPACE}")
     print("🔒 安全模式：只分析元数据，不读取敏感信息")
+    print(f"🎴 ASCII 卡片：{'显示' if args.show_ascii else '不显示（默认）'}")
     print("=" * 60)
     print()
     
@@ -342,8 +345,9 @@ def main():
     print()
     print("   格式选择：")
     print(f"   - 当前格式：{args.format}")
-    print("   - 包含'完整版/截图/桌面版/ASCII/卡片' → 桌面版")
-    print("   - 否则 → 手机版（默认）")
+    print(f"   - ASCII 卡片：{'显示' if args.show_ascii else '不显示（默认）'}")
+    print("   - 仅当用户输入包含'ASCII 图'关键字时才显示 ASCII 卡片")
+    print("   - 否则 → 纯文本报告（默认）")
 
 
 if __name__ == "__main__":
