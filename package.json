@@ -1,7 +1,7 @@
 {
   "name": "openclaw-boss",
-  "version": "7.0.0",
-  "description": "OpenClaw 老板 v7.0 - 纯 LLM 驱动智能分析！100% 大模型评分，安全元数据模式，通用化设计适配所有 OpenClaw 用户。",
+  "version": "7.1.0",
+  "description": "OpenClaw 老板 v7.1 LLM 原生版！由执行者 LLM 直接分析，不嵌套调用其他 LLM。修复 Git 提交统计 bug，优化报告格式选择。",
   "author": "Winston & Yiweisi",
   "license": "MIT",
   "homepage": "https://github.com/yiweisi-bot/openclaw-boss",
