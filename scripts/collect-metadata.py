@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-元数据收集器 v2.1 - 通用安全版
+元数据收集器 v2.2 - Windows 兼容版
 
-通用化设计：
-- ✅ 自动发现数据源（不硬编码路径）
+改进：
+- ✅ 跨平台路径处理（Windows/Linux/macOS）
+- ✅ 自动发现工作空间（不硬编码路径）
 - ✅ 优雅降级（数据缺失不影响报告）
 - ✅ 动态适配（根据可用数据调整）
 - ✅ 不读取任何敏感内容
 
 Usage:
+    python collect-metadata.py [--days N] [--output PATH]
     python3 collect-metadata.py [--days N] [--output PATH]
 """
 
@@ -20,10 +22,85 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 import subprocess
+import platform
 
-# 配置
+# ============================================================================
+# 🛠️ 跨平台路径处理
+# ============================================================================
+
+def get_home_dir() -> Path:
+    """获取用户主目录（跨平台）"""
+    return Path.home()
+
+
+def auto_detect_workspace() -> Path:
+    """
+    自动检测 OpenClaw 工作空间
+    
+    搜索策略：
+    1. 当前脚本的父目录（skills/openclaw-boss/scripts → workspace）
+    2. 环境变量 OPENCLAW_WORKSPACE
+    3. 用户主目录下的 .openclaw/workspace
+    4. 当前工作目录
+    """
+    # 策略 1: 从脚本位置推导
+    script_dir = Path(__file__).parent
+    # 假设结构：workspace/skills/openclaw-boss/scripts/
+    potential_workspace = script_dir.parent.parent.parent
+    if (potential_workspace / "SOUL.md").exists():
+        return potential_workspace
+    
+    # 策略 2: 环境变量
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace and Path(env_workspace).exists():
+        return Path(env_workspace)
+    
+    # 策略 3: 主目录下的 .openclaw/workspace
+    home = get_home_dir()
+    potential_paths = [
+        home / ".openclaw" / "workspace",
+        home / "openclaw" / "workspace",
+        home / ".openclaw",
+    ]
+    for p in potential_paths:
+        if p.exists() and (p / "SOUL.md").exists():
+            return p
+    
+    # 策略 4: 当前工作目录
+    cwd = Path.cwd()
+    if (cwd / "SOUL.md").exists():
+        return cwd
+    
+    # 默认返回当前目录
+    return cwd
+
+
+def get_system_data_dir() -> Path:
+    """获取系统数据目录（跨平台）"""
+    system = platform.system()
+    
+    if system == "Windows":
+        # Windows: C:\ProgramData\openclaw 或 %APPDATA%\openclaw
+        appdata = os.environ.get("APPDATA", "")
+        if appdata:
+            return Path(appdata) / "openclaw"
+        return Path("C:\\ProgramData\\openclaw")
+    elif system == "Darwin":
+        # macOS: ~/Library/Application Support/openclaw
+        return get_home_dir() / "Library" / "Application Support" / "openclaw"
+    else:
+        # Linux: ~/.openclaw 或 /etc/openclaw
+        return get_home_dir() / ".openclaw"
+
+
+# 初始化工作空间
+WORKSPACE = auto_detect_workspace()
 SCRIPTS_DIR = Path(__file__).parent
-WORKSPACE = SCRIPTS_DIR.parent.parent.parent  # skills/openclaw-boss → workspace
+SYSTEM_DATA_DIR = get_system_data_dir()
+
+# ============================================================================
+# 🔒 安全配置
+# ============================================================================
 
 # ⚠️ 敏感文件列表（完全不读取）
 NEVER_READ_FILES = [
@@ -37,12 +114,22 @@ SENSITIVE_KEYWORDS = [
     "sk-", "ghp_", "glpat-", "LETRD",
 ]
 
+# ============================================================================
+# 🛠️ 工具函数
+# ============================================================================
 
 def run_command(cmd: str, timeout: int = 30) -> str:
-    """执行 shell 命令并返回输出"""
+    """执行 shell 命令并返回输出（跨平台）"""
     try:
+        # Windows 使用 shell=True，Linux/macOS 正常执行
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding='utf-8',
+            errors='ignore'
         )
         return result.stdout.strip()
     except Exception as e:
@@ -50,7 +137,7 @@ def run_command(cmd: str, timeout: int = 30) -> str:
 
 
 def safe_read_file(path: Path) -> str:
-    """安全读取文件，跳过敏感行"""
+    """安全读取文件，跳过敏感行（跨平台）"""
     if path.name in NEVER_READ_FILES:
         return ""
     
@@ -58,26 +145,49 @@ def safe_read_file(path: Path) -> str:
         return ""
     
     try:
+        # 跨平台文件读取，处理不同编码
         content = []
-        for line in path.read_text(encoding='utf-8').splitlines():
-            if any(kw in line for kw in SENSITIVE_KEYWORDS):
+        for encoding in ['utf-8', 'gbk', 'latin-1']:
+            try:
+                for line in path.read_text(encoding=encoding).splitlines():
+                    if any(kw in line for kw in SENSITIVE_KEYWORDS):
+                        continue
+                    content.append(line)
+                break
+            except UnicodeDecodeError:
                 continue
-            content.append(line)
+        
         return "\n".join(content)
     except:
         return ""
 
 
+def normalize_path(path: str) -> str:
+    """标准化路径（跨平台）"""
+    # Windows 路径转换为正斜杠（用于 git 命令等）
+    if platform.system() == "Windows":
+        return path.replace("\\", "/")
+    return path
+
+
+# ============================================================================
+# 📊 数据收集函数
+# ============================================================================
+
 def auto_discover_git_projects(base_dir: Path) -> list:
-    """自动发现 Git 项目"""
+    """自动发现 Git 项目（跨平台）"""
     projects = []
     
-    # 扫描常见项目目录
+    # 扫描常见项目目录（跨平台）
+    home = get_home_dir()
     search_dirs = [
         base_dir,
         base_dir.parent / "projects",
-        Path.home() / "projects",
-        Path("/root/projects"),
+        home / "projects",
+        home / "code",
+        home / "workspace",
+        home / "dev",
+        Path("C:\\projects") if platform.system() == "Windows" else Path("/root/projects"),
     ]
     
     for search_dir in search_dirs:
@@ -89,7 +199,8 @@ def auto_discover_git_projects(base_dir: Path) -> list:
             if git_dir.is_dir():
                 project_dir = git_dir.parent
                 # 验证是有效的 Git 仓库
-                output = run_command(f"cd {project_dir} && git rev-parse --is-inside-work-tree 2>/dev/null")
+                normalized_path = normalize_path(str(project_dir))
+                output = run_command(f'cd "{normalized_path}" && git rev-parse --is-inside-work-tree 2>/dev/null')
                 if "true" in output:
                     projects.append(project_dir)
     
@@ -106,7 +217,7 @@ def auto_discover_git_projects(base_dir: Path) -> list:
 
 
 def auto_discover_blog_projects(base_dir: Path) -> list:
-    """自动发现博客项目"""
+    """自动发现博客项目（跨平台）"""
     blog_patterns = [
         "**/blog/**/*.md",
         "**/posts/**/*.md",
@@ -117,31 +228,40 @@ def auto_discover_blog_projects(base_dir: Path) -> list:
     
     blogs = []
     for pattern in blog_patterns:
-        for md_file in base_dir.glob(pattern):
-            blog_dir = md_file.parent
-            if blog_dir not in blogs:
-                blogs.append(blog_dir)
+        try:
+            for md_file in base_dir.glob(pattern):
+                blog_dir = md_file.parent
+                if blog_dir not in blogs:
+                    blogs.append(blog_dir)
+        except:
+            pass  # 忽略 glob 错误
     
     # 也扫描常见项目目录
+    home = get_home_dir()
     search_dirs = [
         base_dir.parent / "projects",
-        Path.home() / "projects",
-        Path("/root/projects"),
+        home / "projects",
+        home / "code",
+        Path("C:\\projects") if platform.system() == "Windows" else Path("/root/projects"),
     ]
     
     for search_dir in search_dirs:
-        if search_dir.exists():
-            for pattern in blog_patterns:
+        if not search_dir.exists():
+            continue
+        for pattern in blog_patterns:
+            try:
                 for md_file in search_dir.glob(pattern):
                     blog_dir = md_file.parent
                     if blog_dir not in blogs:
                         blogs.append(blog_dir)
+            except:
+                pass
     
     return blogs[:5]  # 最多 5 个博客
 
 
 def get_sessions_stats(days: int = 7) -> dict:
-    """获取会话统计（通用）"""
+    """获取会话统计（跨平台）"""
     stats = {
         "total": 0,
         "active_hours": [],
@@ -150,7 +270,7 @@ def get_sessions_stats(days: int = 7) -> dict:
     }
     
     try:
-        # 尝试调用 sessions_list
+        # 尝试调用 sessions_list（OpenClaw 命令）
         output = run_command(f"sessions_list --limit 100 --messageLimit 1 2>/dev/null")
         if not output:
             return stats
@@ -192,314 +312,271 @@ def get_sessions_stats(days: int = 7) -> dict:
 
 
 def get_memory_stats(base_dir: Path) -> dict:
-    """获取记忆文件统计（通用）"""
+    """获取记忆文件统计（跨平台）"""
     stats = {
         "total_files": 0,
         "memory_file_exists": False,
         "oldest_file": None,
         "newest_file": None,
-        "total_size_kb": 0,
-        "available": False
     }
     
-    # 检查长期记忆文件
-    memory_file = base_dir / "MEMORY.md"
-    if memory_file.exists():
-        stats["memory_file_exists"] = True
-        stats["available"] = True
-        stats["total_size_kb"] += memory_file.stat().st_size // 1024
-    
-    # 扫描记忆目录（尝试多个可能的目录名）
-    memory_dirs = [
-        base_dir / "memory",
-        base_dir / "memories",
-        base_dir / "logs",
-        base_dir / "daily",
-    ]
-    
-    for mem_dir in memory_dirs:
-        if mem_dir.exists() and mem_dir.is_dir():
-            files = sorted(mem_dir.glob("*.md"))
-            if files:
-                stats["total_files"] = len(files)
-                stats["available"] = True
-                stats["oldest_file"] = files[0].name
-                stats["newest_file"] = files[-1].name
-                stats["total_size_kb"] += sum(f.stat().st_size // 1024 for f in files)
-                break  # 找到第一个就用
+    try:
+        memory_dir = base_dir / "memory"
+        if memory_dir.exists():
+            md_files = list(memory_dir.glob("*.md"))
+            stats["total_files"] = len(md_files)
+            
+            # 找出最早和最新的文件
+            if md_files:
+                file_times = [(f, f.stat().st_mtime) for f in md_files]
+                stats["oldest_file"] = min(file_times, key=lambda x: x[1])[0].name
+                stats["newest_file"] = max(file_times, key=lambda x: x[1])[0].name
+        
+        # 检查 MEMORY.md
+        if (base_dir / "MEMORY.md").exists():
+            stats["memory_file_exists"] = True
+            
+    except Exception as e:
+        pass
     
     return stats
 
 
 def get_git_stats(base_dir: Path) -> dict:
-    """获取 Git 提交统计（通用）"""
+    """获取 Git 统计（跨平台）"""
     stats = {
         "total_commits": 0,
         "commits_this_week": 0,
-        "commits_this_month": 0,
-        "repos": [],
-        "available": False
+        "projects": [],
     }
     
-    # 自动发现 Git 项目
     projects = auto_discover_git_projects(base_dir)
     
-    # 排除列表：不统计大型开源项目/fork 仓库
-    EXCLUDE_PATTERNS = [
-        "clawdbot",
-        "moltbot",
-        "node_modules",
-        ".cache",
-        "temp_git",
-    ]
-    
-    for proj_dir in projects:
+    for project in projects:
         try:
-            # 跳过排除的项目
-            if any(pattern in proj_dir.name.lower() for pattern in EXCLUDE_PATTERNS):
-                continue
+            normalized_path = normalize_path(str(project))
             
-            # 总提交数（只统计活跃仓库：本周或本月有提交）
-            week_commits = run_command(f"cd {proj_dir} && git log --since='1 week ago' --oneline 2>/dev/null | wc -l")
-            month_commits = run_command(f"cd {proj_dir} && git log --since='1 month ago' --oneline 2>/dev/null | wc -l")
+            # 总提交数
+            output = run_command(f'cd "{normalized_path}" && git rev-list --count HEAD 2>/dev/null')
+            if output.isdigit():
+                stats["total_commits"] += int(output)
             
-            week_count = int(week_commits) if week_commits and week_commits.isdigit() else 0
-            month_count = int(month_commits) if month_commits and month_commits.isdigit() else 0
+            # 本周提交数
+            week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+            output = run_command(f'cd "{normalized_path}" && git log --since="{week_ago}" --oneline 2>/dev/null')
+            if output:
+                commits = [line for line in output.split('\n') if line.strip()]
+                stats["commits_this_week"] += len(commits)
             
-            # 只统计活跃仓库（本周或本月有提交）
-            if week_count > 0 or month_count > 0:
-                stats["commits_this_week"] += week_count
-                stats["commits_this_month"] += month_count
-                
-                # 计算总提交（只算活跃仓库）
-                total = run_command(f"cd {proj_dir} && git rev-list --count HEAD 2>/dev/null")
-                if total and total.isdigit():
-                    stats["total_commits"] += int(total)
-                    stats["available"] = True
-                
-                stats["repos"].append(proj_dir.name)
-        except:
+            # 记录项目名
+            stats["projects"].append({
+                "name": project.name,
+                "path": str(project),
+            })
+            
+        except Exception as e:
             pass
     
     return stats
 
 
 def get_skills_stats(base_dir: Path) -> dict:
-    """获取已安装技能统计（通用）"""
+    """获取技能统计（跨平台）"""
     stats = {
         "total": 0,
-        "skills": [],
         "installed_this_month": 0,
-        "available": False
     }
     
-    # 尝试多个可能的技能目录
-    skills_dirs = [
-        base_dir / "skills",
-        base_dir.parent / "skills",
-        Path("/root/.openclaw/skills"),
-    ]
-    
-    for skills_dir in skills_dirs:
-        if skills_dir.exists() and skills_dir.is_dir():
-            skills = [d.name for d in skills_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
-            if skills:
-                stats["total"] = len(skills)
-                stats["skills"] = skills[:20]  # 最多 20 个
-                stats["available"] = True
-                
-                # 检查最近安装
-                now = datetime.now()
-                for skill_dir in skills_dir.iterdir():
-                    if skill_dir.is_dir() and not skill_dir.name.startswith('.'):
-                        try:
-                            mtime = datetime.fromtimestamp(skill_dir.stat().st_mtime)
-                            if (now - mtime).days <= 30:
-                                stats["installed_this_month"] += 1
-                        except:
-                            pass
-                break
+    try:
+        skills_dir = base_dir / "skills"
+        if skills_dir.exists():
+            skill_folders = [d for d in skills_dir.iterdir() if d.is_dir()]
+            stats["total"] = len(skill_folders)
+            
+            # 本月安装的（根据文件夹修改时间）
+            month_ago = datetime.now() - timedelta(days=30)
+            for folder in skill_folders:
+                try:
+                    mtime = datetime.fromtimestamp(folder.stat().st_mtime)
+                    if mtime > month_ago:
+                        stats["installed_this_month"] += 1
+                except:
+                    pass
+        
+        # 也检查系统数据目录
+        system_skills = SYSTEM_DATA_DIR / "skills"
+        if system_skills.exists() and system_skills != skills_dir:
+            skill_folders = [d for d in system_skills.iterdir() if d.is_dir()]
+            stats["total"] += len(skill_folders)
+            
+    except Exception as e:
+        pass
     
     return stats
 
 
 def get_blog_stats(base_dir: Path) -> dict:
-    """获取博客统计（通用）"""
+    """获取博客统计（跨平台）"""
     stats = {
         "total_articles": 0,
         "articles_this_week": 0,
-        "articles_this_month": 0,
-        "last_publish": None,
-        "available": False
+        "projects": [],
     }
     
-    # 自动发现博客项目
-    blogs = auto_discover_blog_projects(base_dir)
+    blog_dirs = auto_discover_blog_projects(base_dir)
     
-    now = datetime.now()
-    latest_mtime = None
-    
-    for blog_dir in blogs:
-        if not blog_dir.exists():
-            continue
-        
-        articles = list(blog_dir.glob("*.md"))
-        stats["total_articles"] += len(articles)
-        
-        if articles:
-            stats["available"] = True
-        
-        for article in articles:
-            try:
-                mtime = datetime.fromtimestamp(article.stat().st_mtime)
-                if (now - mtime).days <= 7:
-                    stats["articles_this_week"] += 1
-                if (now - mtime).days <= 30:
-                    stats["articles_this_month"] += 1
-                if latest_mtime is None or mtime > latest_mtime:
-                    latest_mtime = mtime
-            except:
-                pass
-    
-    if latest_mtime:
-        stats["last_publish"] = latest_mtime.strftime('%Y-%m-%d')
+    for blog_dir in blog_dirs:
+        try:
+            md_files = list(blog_dir.glob("*.md"))
+            stats["total_articles"] += len(md_files)
+            
+            # 本周文章
+            week_ago = datetime.now() - timedelta(days=7)
+            for md_file in md_files:
+                try:
+                    mtime = datetime.fromtimestamp(md_file.stat().st_mtime)
+                    if mtime > week_ago:
+                        stats["articles_this_week"] += 1
+                except:
+                    pass
+            
+            # 记录项目名
+            stats["projects"].append({
+                "name": blog_dir.parent.name + "/" + blog_dir.name,
+                "path": str(blog_dir),
+            })
+            
+        except Exception as e:
+            pass
     
     return stats
 
 
 def get_cron_stats() -> dict:
-    """获取定时任务统计（通用）"""
+    """获取定时任务统计（跨平台）"""
     stats = {
         "total_jobs": 0,
         "jobs": [],
-        "available": False
     }
     
+    system = platform.system()
+    
     try:
-        output = run_command("crontab -l 2>/dev/null")
-        if output:
-            for line in output.splitlines():
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                if any(kw in line for kw in SENSITIVE_KEYWORDS):
-                    continue
-                stats["total_jobs"] += 1
-                stats["available"] = True
-                
-                # 简化描述
-                if "heartbeat" in line.lower():
-                    stats["jobs"].append("心跳任务")
-                elif "backup" in line.lower():
-                    stats["jobs"].append("备份任务")
-                elif "sync" in line.lower():
-                    stats["jobs"].append("同步任务")
-                elif "check" in line.lower() or "scan" in line.lower():
-                    stats["jobs"].append("检查任务")
-                else:
-                    stats["jobs"].append("定时任务")
-    except:
+        if system == "Windows":
+            # Windows 任务计划程序
+            output = run_command('schtasks /query /fo CSV 2>nul')
+            if output:
+                lines = output.split('\n')[1:]  # 跳过表头
+                stats["total_jobs"] = len(lines)
+        else:
+            # Linux/macOS cron
+            output = run_command('crontab -l 2>/dev/null')
+            if output:
+                jobs = [line for line in output.split('\n') if line.strip() and not line.startswith('#')]
+                stats["total_jobs"] = len(jobs)
+            
+            # 系统级 cron
+            cron_dirs = ["/etc/cron.d", "/etc/cron.daily", "/etc/cron.hourly"]
+            for cron_dir in cron_dirs:
+                if Path(cron_dir).exists():
+                    stats["total_jobs"] += len(list(Path(cron_dir).iterdir()))
+    
+    except Exception as e:
         pass
     
     return stats
 
 
 def get_system_stats() -> dict:
-    """获取系统运行统计（通用）"""
+    """获取系统统计（跨平台）"""
     stats = {
         "uptime_days": 0,
-        "python_version": "",
-        "node_version": "",
-        "os_info": ""
+        "os": platform.system(),
+        "os_version": platform.version(),
+        "python_version": platform.python_version(),
     }
     
     try:
-        # 运行时间
-        uptime_output = run_command("uptime -p 2>/dev/null")
-        if uptime_output:
-            match = re.search(r'(\d+) days?', uptime_output)
-            if match:
-                stats["uptime_days"] = int(match.group(1))
-        
-        # 版本信息
-        stats["python_version"] = run_command("python3 --version 2>/dev/null").replace("Python ", "")
-        stats["node_version"] = run_command("node --version 2>/dev/null").replace("v", "")
-        stats["os_info"] = run_command("uname -s 2>/dev/null")
-        
-    except:
+        if platform.system() == "Windows":
+            # Windows 运行时间
+            output = run_command('wmic os get lastbootuptime')
+            if output:
+                lines = output.strip().split('\n')
+                if len(lines) > 1:
+                    boot_time = lines[1].strip()
+                    # 解析 Windows 时间格式
+                    try:
+                        boot = datetime.strptime(boot_time[:14], '%Y%m%d%H%M%S')
+                        stats["uptime_days"] = (datetime.now() - boot).days
+                    except:
+                        pass
+        else:
+            # Linux/macOS 运行时间
+            output = run_command('uptime -p 2>/dev/null')
+            if output:
+                # 解析 "up 2 days, 3 hours" 格式
+                match = re.search(r'up\s+(\d+)\s+day', output)
+                if match:
+                    stats["uptime_days"] = int(match.group(1))
+    
+    except Exception as e:
         pass
     
     return stats
 
 
-def analyze_patterns(metadata: dict) -> dict:
-    """基于元数据分析行为模式（通用）"""
+def detect_patterns(base_dir: Path) -> dict:
+    """检测用户行为模式（跨平台）"""
     patterns = {}
     
-    # 活跃时段分析
-    active_hours = metadata.get("sessions", {}).get("active_hours", [])
-    if active_hours:
-        if any(h >= 23 or h <= 2 for h in active_hours):
-            patterns["work_habit"] = "夜猫子"
-        elif any(h >= 5 and h <= 7 for h in active_hours):
-            patterns["work_habit"] = "早起鸟"
-        else:
-            patterns["work_habit"] = "正常作息"
-    else:
-        patterns["work_habit"] = "未知"
-    
-    # 工作强度分析
-    daily_avg = metadata.get("sessions", {}).get("daily_avg", 0)
-    if daily_avg >= 50:
-        patterns["intensity"] = "高强度"
-    elif daily_avg >= 20:
-        patterns["intensity"] = "中等强度"
-    else:
-        patterns["intensity"] = "轻度使用"
-    
-    # 技能活跃度
-    skills_month = metadata.get("skills", {}).get("installed_this_month", 0)
-    if skills_month >= 3:
-        patterns["learning"] = "积极探索"
-    elif skills_month >= 1:
-        patterns["learning"] = "稳定学习"
-    else:
-        patterns["learning"] = "保守使用"
-    
-    # 内容生产力
-    blog_week = metadata.get("blog", {}).get("articles_this_week", 0)
-    if blog_week >= 3:
-        patterns["productivity"] = "高产"
-    elif blog_week >= 1:
-        patterns["productivity"] = "稳定输出"
-    else:
-        patterns["productivity"] = "偶尔创作"
-    
-    # Git 活跃度
-    git_week = metadata.get("git", {}).get("commits_this_week", 0)
-    if git_week >= 10:
-        patterns["coding"] = "密集开发"
-    elif git_week >= 5:
-        patterns["coding"] = "活跃开发"
-    elif git_week >= 1:
-        patterns["coding"] = "偶尔提交"
-    else:
-        patterns["coding"] = "近期无提交"
+    try:
+        # 检查是否有定时任务配置文件
+        if (base_dir / "HEARTBEAT.md").exists():
+            patterns["has_heartbeat"] = True
+        
+        # 检查是否有记忆系统
+        memory_stats = get_memory_stats(base_dir)
+        if memory_stats["total_files"] > 0:
+            patterns["uses_memory_system"] = True
+        
+        # 检查是否有 Git 项目
+        git_stats = get_git_stats(base_dir)
+        if git_stats["total_commits"] > 0:
+            patterns["uses_git"] = True
+        
+        # 检查是否有博客
+        blog_stats = get_blog_stats(base_dir)
+        if blog_stats["total_articles"] > 0:
+            patterns["writes_blog"] = True
+        
+    except Exception as e:
+        pass
     
     return patterns
 
 
+# ============================================================================
+# 🚀 主函数
+# ============================================================================
+
 def collect_all(base_dir: Path = None, days: int = 7) -> dict:
-    """收集所有元数据（通用入口）"""
+    """收集所有元数据"""
     if base_dir is None:
         base_dir = WORKSPACE
     
-    print("📊 开始收集元数据...")
+    print(f"📊 开始收集元数据...")
     print(f"   工作空间：{base_dir}")
+    print(f"   系统：{platform.system()} {platform.version()}")
+    print(f"   Python: {platform.python_version()}")
     
     metadata = {
         "collected_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "period_days": days,
+        "platform": {
+            "system": platform.system(),
+            "version": platform.version(),
+            "python": platform.python_version(),
+        },
         "workspace": str(base_dir),
         "sessions": get_sessions_stats(days),
         "memory": get_memory_stats(base_dir),
@@ -508,59 +585,55 @@ def collect_all(base_dir: Path = None, days: int = 7) -> dict:
         "blog": get_blog_stats(base_dir),
         "cron": get_cron_stats(),
         "system": get_system_stats(),
+        "patterns": detect_patterns(base_dir),
+        "data_availability": {
+            "sessions": False,
+            "memory": False,
+            "git": False,
+            "blog": False,
+        }
     }
     
-    # 分析行为模式
-    metadata["patterns"] = analyze_patterns(metadata)
+    # 标记可用数据源
+    metadata["data_availability"]["sessions"] = metadata["sessions"]["available"]
+    metadata["data_availability"]["memory"] = metadata["memory"]["total_files"] > 0
+    metadata["data_availability"]["git"] = metadata["git"]["total_commits"] > 0
+    metadata["data_availability"]["blog"] = metadata["blog"]["total_articles"] > 0
     
-    # 数据可用性总结
-    metadata["data_availability"] = {
-        "sessions": metadata["sessions"]["available"],
-        "memory": metadata["memory"]["available"],
-        "git": metadata["git"]["available"],
-        "skills": metadata["skills"]["available"],
-        "blog": metadata["blog"]["available"],
-        "cron": metadata["cron"]["available"],
-    }
-    
-    # 打印摘要
-    print(f"   ✅ 会话：{metadata['sessions']['total']} 条 {'(可用)' if metadata['sessions']['available'] else '(不可用)'}")
-    print(f"   ✅ 记忆：{metadata['memory']['total_files']} 个文件 {'(可用)' if metadata['memory']['available'] else '(不可用)'}")
-    print(f"   ✅ Git: {metadata['git']['total_commits']} 次提交 {'(可用)' if metadata['git']['available'] else '(不可用)'}")
-    print(f"   ✅ 技能：{metadata['skills']['total']} 个 {'(可用)' if metadata['skills']['available'] else '(不可用)'}")
-    print(f"   ✅ 博客：{metadata['blog']['total_articles']} 篇 {'(可用)' if metadata['blog']['available'] else '(不可用)'}")
-    print(f"   ✅ Cron: {metadata['cron']['total_jobs']} 个任务 {'(可用)' if metadata['cron']['available'] else '(不可用)'}")
-    
-    return metadata
-
-
-def main():
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='元数据收集器 v2.1（通用安全版）')
-    parser.add_argument('--days', type=int, default=7, help='统计最近 N 天')
-    parser.add_argument('--output', type=str, help='输出 JSON 文件路径')
-    parser.add_argument('--workspace', type=str, help='工作空间目录（可选）')
-    
-    args = parser.parse_args()
-    
-    base_dir = Path(args.workspace) if args.workspace else WORKSPACE
-    
-    metadata = collect_all(base_dir, args.days)
-    
-    # 输出 JSON
-    json_output = json.dumps(metadata, indent=2, ensure_ascii=False)
-    
-    if args.output:
-        output_path = Path(args.output)
-        output_path.write_text(json_output, encoding='utf-8')
-        print(f"✅ 元数据已保存至：{output_path}")
-    else:
-        print("\n📋 元数据 JSON:")
-        print(json_output)
+    print(f"   ✅ 元数据收集完成")
+    print(f"      - 会话：{metadata['sessions']['total']}")
+    print(f"      - 记忆文件：{metadata['memory']['total_files']}")
+    print(f"      - Git 提交：{metadata['git']['total_commits']}")
+    print(f"      - 博客文章：{metadata['blog']['total_articles']}")
+    print(f"      - 技能：{metadata['skills']['total']}")
+    print(f"      - 系统运行时间：{metadata['system']['uptime_days']} 天")
     
     return metadata
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="收集 OpenClaw 元数据")
+    parser.add_argument("--days", type=int, default=7, help="分析天数")
+    parser.add_argument("--output", type=str, help="输出文件路径")
+    parser.add_argument("--workspace", type=str, help="工作空间路径")
+    
+    args = parser.parse_args()
+    
+    # 收集元数据
+    metadata = collect_all(
+        base_dir=Path(args.workspace) if args.workspace else None,
+        days=args.days
+    )
+    
+    # 输出 JSON
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        print(f"\n📄 元数据已保存到：{output_path}")
+    else:
+        # 输出到 stdout（供 analyze-user.py 解析）
+        print("\n" + json.dumps(metadata, ensure_ascii=False, indent=2))

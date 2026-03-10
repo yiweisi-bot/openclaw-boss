@@ -1,27 +1,91 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-用户评价分析器 v7.1 - LLM 原生版
+用户评价分析器 v7.2 - 跨平台版（Windows/Linux/macOS）
 
 由执行脚本的 LLM 直接分析（不需要调用另一个 LLM）：
 - ✅ 元数据收集（本地脚本）
 - ✅ LLM 分析评分（由执行者直接分析）
 - ✅ 报告生成（模板渲染）
-- ❌ 不嵌套调用其他 LLM
+- ❌ 不嵌套调用另一个 LLM
+- ✅ 跨平台路径处理
 
 Usage:
+    python analyze-user.py [--format mobile|desktop|both]
     python3 analyze-user.py [--format mobile|desktop|both]
 """
 
 import os
 import sys
 import json
+import platform
 from datetime import datetime
 from pathlib import Path
 import subprocess
 
-# 配置
-WORKSPACE = Path("/root/.openclaw/workspace")
+
+def auto_detect_workspace() -> Path:
+    """
+    自动检测 OpenClaw 工作空间（跨平台）
+    
+    搜索策略：
+    1. 当前脚本的父目录（skills/openclaw-boss/scripts → workspace）
+    2. 环境变量 OPENCLAW_WORKSPACE
+    3. 用户主目录下的 .openclaw/workspace
+    4. 当前工作目录
+    """
+    script_dir = Path(__file__).parent
+    
+    # 策略 1: 从脚本位置推导
+    potential_workspace = script_dir.parent.parent.parent
+    if (potential_workspace / "SOUL.md").exists():
+        return potential_workspace
+    
+    # 策略 2: 环境变量
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace and Path(env_workspace).exists():
+        return Path(env_workspace)
+    
+    # 策略 3: 主目录下的 .openclaw/workspace
+    home = Path.home()
+    potential_paths = [
+        home / ".openclaw" / "workspace",
+        home / "openclaw" / "workspace",
+        home / ".openclaw",
+    ]
+    for p in potential_paths:
+        if p.exists() and (p / "SOUL.md").exists():
+            return p
+    
+    # 策略 4: 当前工作目录
+    cwd = Path.cwd()
+    if (cwd / "SOUL.md").exists():
+        return cwd
+    
+    # 默认返回当前目录
+    return cwd
+
+
+def run_command(cmd: str, timeout: int = 60) -> str:
+    """执行 shell 命令并返回输出（跨平台）"""
+    try:
+        # 跨平台命令执行
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding='utf-8',
+            errors='ignore'
+        )
+        return result.stdout.strip()
+    except Exception as e:
+        return ""
+
+
+# 配置（跨平台自动检测）
+WORKSPACE = auto_detect_workspace()
 SCRIPTS_DIR = Path(__file__).parent
 REPORTS_DIR = WORKSPACE / "reports"
 
@@ -29,21 +93,15 @@ REPORTS_DIR = WORKSPACE / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
 
-def run_command(cmd: str, timeout: int = 60) -> str:
-    """执行 shell 命令并返回输出"""
-    try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
-        return result.stdout.strip()
-    except Exception as e:
-        return ""
-
-
 def collect_metadata(days: int = 7) -> dict:
     """收集元数据（只读统计数字，不读敏感内容）"""
     print("📊 阶段 1/3: 收集元数据...")
     
+    # 跨平台 Python 命令
+    python_cmd = "python" if platform.system() == "Windows" else "python3"
+    
     # 调用 collect-metadata.py
-    output = run_command(f"python3 {SCRIPTS_DIR}/collect-metadata.py --days {days}")
+    output = run_command(f'{python_cmd} "{SCRIPTS_DIR}/collect-metadata.py" --days {days}')
     
     # 解析 JSON 输出
     try:
@@ -53,10 +111,10 @@ def collect_metadata(days: int = 7) -> dict:
             metadata = json.loads(output[json_start:json_end])
             print(f"   ✅ 元数据收集完成")
             return metadata
-    except:
-        pass
+    except Exception as e:
+        print(f"   ⚠️ 解析元数据失败：{e}")
     
-    # 返回基础数据
+    # 返回基础数据（优雅降级）
     return {
         "collected_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "period_days": days,
@@ -75,10 +133,7 @@ def prepare_analysis_data(metadata: dict) -> None:
     """
     准备分析数据，由执行脚本的 LLM 直接分析。
     
-    v7.1 改进：不再嵌套调用另一个 LLM，而是：
-    1. 输出元数据 JSON
-    2. 输出分析指南
-    3. 由执行者（你，LLM）直接分析并生成报告
+    v7.2 改进：跨平台兼容
     """
     print("📊 阶段 2/3: 准备分析数据...")
     
@@ -246,16 +301,19 @@ _报告生成完成。_
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='用户评价分析器 v7.1（LLM 原生版）')
+    parser = argparse.ArgumentParser(description='用户评价分析器 v7.2（跨平台版）')
     parser.add_argument('--format', type=str, default='mobile',
                        choices=['mobile', 'desktop', 'both'], 
                        help='卡片格式（默认 mobile）')
     
     args = parser.parse_args()
     
-    print("🚀 OpenClaw 人类养成报告生成器 v7.1")
+    print("🚀 OpenClaw 人类养成报告生成器 v7.2")
     print("=" * 60)
-    print("🤖 LLM 原生版 · 由执行者直接分析")
+    print(f"🤖 LLM 原生版 · 由执行者直接分析")
+    print(f"🌍 跨平台版 · 系统：{platform.system()} {platform.version()}")
+    print(f"🐍 Python: {platform.python_version()}")
+    print(f"📁 工作空间：{WORKSPACE}")
     print("🔒 安全模式：只分析元数据，不读取敏感信息")
     print("=" * 60)
     print()
@@ -266,7 +324,7 @@ def main():
     # 阶段 2: 准备分析数据（由执行者 LLM 直接分析）
     prepare_analysis_data(metadata)
     
-    # v7.1: 输出元数据摘要供 LLM 快速参考
+    # v7.2: 输出元数据摘要供 LLM 快速参考
     print("\n📦 元数据摘要（供快速参考）：")
     print("=" * 60)
     print(f"   会话总数：{metadata.get('sessions', {}).get('total', 0)}")
