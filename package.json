@@ -1,7 +1,7 @@
 {
   "name": "openclaw-boss",
-  "version": "7.1.0",
-  "description": "OpenClaw 老板 v7.1 LLM 原生版！由执行者 LLM 直接分析，不嵌套调用其他 LLM。修复 Git 提交统计 bug，优化报告格式选择。",
+  "version": "7.4.1",
+  "description": "OpenClaw 老板 v7.4.1 锐评出圈版！默认纯文本报告，锐评前置、金句爆点、尖锐有趣。基于真实数据创作个性化锐评，不编造不照搬。",
   "author": "Winston & Yiweisi",
   "license": "MIT",
   "homepage": "https://github.com/yiweisi-bot/openclaw-boss",
@@ -16,7 +16,8 @@
     "profile",
     "analysis",
     "roast",
-    "self-reflection"
+    "self-reflection",
+    "锐评"
   ],
   "openclaw": {
     "emoji": "💼",
