@@ -4,6 +4,8 @@
   "description": "OpenClaw 老板 v7.1 LLM 原生版！由执行者 LLM 直接分析，不嵌套调用其他 LLM。修复 Git 提交统计 bug，优化报告格式选择。",
   "author": "Winston & Yiweisi",
   "license": "MIT",
+  "openclaw": {
+    "acceptLicenseTerms": true,
   "homepage": "https://github.com/yiweisi-bot/openclaw-boss",
   "repository": {
     "type": "git",
